@@ -7,10 +7,6 @@ from datetime import datetime
 # Title
 st.title("🏀 College Basketball Betting Dashboard")
 
-# Sidebar for user input
-st.sidebar.header("Game Selection")
-selected_team = st.sidebar.text_input("Enter a Team Name:")
-
 # Function to scrape ESPN NCAA data for today's games
 def get_espn_ncaa_data():
     today = datetime.today().strftime('%Y%m%d')
@@ -79,13 +75,8 @@ for index, row in ncaa_data.iterrows():
     except:
         ncaa_data.at[index, "Line Movement"] = "Error"
 
-# Display filtered results
-if selected_team:
-    filtered_df = ncaa_data[ncaa_data["Team"].str.contains(selected_team, case=False, na=False)]
-    st.write(f"### Games Today for {selected_team}")
-    st.table(filtered_df)
-else:
-    st.write("### All Men's College Basketball Games Today")
-    st.table(ncaa_data)
+# Display all games
+st.write("### All Men's College Basketball Games Today")
+st.table(ncaa_data)
 
 st.write("🔹 This dashboard now pulls today's NCAA games, live odds, and tracks line movement from ESPN & Vegas Insider!")
