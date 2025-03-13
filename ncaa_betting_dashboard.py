@@ -8,21 +8,21 @@ import matplotlib.pyplot as plt
 # Title
 st.title("🏀 College Basketball Betting Dashboard")
 
-# Function to scrape Google search results for NCAA games
-def get_google_ncaa_data():
-    query = "NCAA basketball scores today"
-    url = f"https://www.google.com/search?q={query}"
+# Function to scrape Yahoo Sports for NCAA games
+def get_yahoo_ncaa_data():
+    today_date = datetime.today().strftime('%Y-%m-%d')
+    url = f"https://sports.yahoo.com/college-basketball/scoreboard/?confId=all&dateRange={today_date}"
     headers = {"User-Agent": "Mozilla/5.0"}  # Mimic a real browser request
     
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, "html.parser")
     
-    print(response.text)  # DEBUG: Print Google HTML response to check if data is retrieved
+    print(response.text)  # DEBUG: Print Yahoo HTML response to check if data is retrieved
     
     games = []
-    for game in soup.find_all("div", class_="BNeawe deIvCb AP7Wnd"):  # Adjust based on Google's structure
-        teams = game.find_all("div", class_="BNeawe s3v9rd AP7Wnd")
-        scores = game.find_all("div", class_="BNeawe tAd8D AP7Wnd")
+    for game in soup.find_all("div", class_="Mb(10px)"):  # Adjust based on Yahoo's structure
+        teams = game.find_all("div", class_="D(f) Ai(c) Fz(14px) C($c-base)")
+        scores = game.find_all("div", class_="D(f) Ai(c) Fz(24px) C($c-base)")
         
         if len(teams) == 2 and len(scores) == 2:
             team1 = teams[0].text.strip()
@@ -36,26 +36,30 @@ def get_google_ncaa_data():
 
 # Function to get last 10 game scores for a team
 def get_last_10_games(team):
-    query = f"{team} last 10 games NCAA basketball"
-    url = f"https://www.google.com/search?q={query}"
+    url = f"https://sports.yahoo.com/ncaab/teams/{team.lower().replace(' ', '-')}/schedule/"
     headers = {"User-Agent": "Mozilla/5.0"}
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, "html.parser")
     
     games = []
-    for row in soup.find_all("div", class_="BNeawe s3v9rd AP7Wnd")[1:11]:  # Adjust based on Google's structure
-        text = row.text.strip()
-        games.append({"Game": text})
+    for row in soup.find_all("tr", class_="Bgc($lv1BgColor)")[1:11]:  # Adjust based on Yahoo's structure
+        cols = row.find_all("td")
+        if len(cols) >= 3:
+            date = cols[0].text.strip()
+            opponent = cols[1].text.strip()
+            result = cols[2].text.strip()
+            games.append({"Date": date, "Opponent": opponent, "Result": result})
     
     return pd.DataFrame(games)
 
-# Fetch live NCAA data from Google
-ncaa_data = get_google_ncaa_data()
+# Fetch live NCAA data from Yahoo Sports
+ncaa_data = get_yahoo_ncaa_data()
 
 # Display all games
 st.write("### All Men's College Basketball Games Today")
 st.table(ncaa_data)
 
+# Display last 10 game results for each team
 st.write("### Last 10 Games for Each Team")
 if not ncaa_data.empty and "Home Team" in ncaa_data.columns:
     for team in ncaa_data["Home Team"].unique():
@@ -65,12 +69,12 @@ if not ncaa_data.empty and "Home Team" in ncaa_data.columns:
         
         # Plot results
         fig, ax = plt.subplots()
-        results = team_data["Game"].apply(lambda x: 1 if "W" in x else 0)  # Convert W/L to binary
+        results = team_data["Result"].apply(lambda x: 1 if "W" in x else 0)  # Convert W/L to binary
         ax.plot(results, marker='o', linestyle='-')
         ax.set_title(f"{team} Last 10 Games Results (1=Win, 0=Loss)")
         ax.set_ylim(-0.5, 1.5)
         st.pyplot(fig)
 else:
-    st.write("⚠ No game data available. Check Google scraping function.")
+    st.write("⚠ No game data available. Check Yahoo Sports scraping function.")
 
-st.write("🔹 This dashboard now pulls today's NCAA games and last 10 game results from Google!")
+st.write("🔹 This dashboard now pulls today's NCAA games and last 10 game results from Yahoo Sports!")
