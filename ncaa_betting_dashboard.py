@@ -10,7 +10,7 @@ st.title("🏀 College Basketball Betting Dashboard")
 # Function to scrape ESPN NCAA data for today's games
 def get_espn_ncaa_data():
     today = datetime.today().strftime('%Y%m%d')
-    url = f"https://www.espn.com/mens-college-basketball/scoreboard/_/date/{today}"
+    url = f"https://www.espn.com/mens-college-basketball/scoreboard/_/seasontype/2/group/50"
     headers = {"User-Agent": "Mozilla/5.0"}  # Mimic a real browser request
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, "html.parser")
