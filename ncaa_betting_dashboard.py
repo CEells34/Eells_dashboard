@@ -29,6 +29,8 @@ def get_espn_ncaa_data():
             score2 = scores[1].text.strip()
             
             games.append({"Home Team": team1, "Away Team": team2, "Score": f"{score1} - {score2}"})
+        
+        print(response.text)  # DEBUG: Print ESPN HTML response
     
     return pd.DataFrame(games)
 
