@@ -58,7 +58,10 @@ ncaa_data = get_espn_ncaa_data()
 opening_odds = get_opening_odds()
  
 # Merge opening odds with game data
-ncaa_data["Opening Odds"] = ncaa_data["Team"].map(opening_odds).fillna("N/A")
+if not opening_odds:  # If the dictionary is empty
+    ncaa_data["Opening Odds"] = "N/A"
+else:
+    ncaa_data["Opening Odds"] = ncaa_data["Team"].map(opening_odds).fillna("N/A")
  
 # Calculate line movement
 for index, row in ncaa_data.iterrows():
