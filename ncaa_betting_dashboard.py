@@ -12,12 +12,12 @@ st.title("🏀 College Basketball Betting Dashboard")
 def get_yahoo_ncaa_data():
     today_date = datetime.today().strftime('%Y-%m-%d')
     url = f"https://sports.yahoo.com/college-basketball/scoreboard/?confId=all&dateRange={today_date}"
-    headers = {"User-Agent": "Mozilla/5.0"}  # Mimic a real browser request
+    headers = {"User-Agent": "Mozilla/5.0"}
     
     response = requests.get(url, headers=headers)
-    soup = BeautifulSoup(response.text, "html.parser")
+    print("Yahoo Response:", response.text)  # DEBUG: Print Yahoo HTML response to logs
     
-    print(response.text)  # DEBUG: Print Yahoo HTML response to check if data is retrieved
+    soup = BeautifulSoup(response.text, "html.parser")
     
     games = []
     for game in soup.find_all("div", class_="Mb(10px)"):  # Adjust based on Yahoo's structure
