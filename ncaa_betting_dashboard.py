@@ -1,59 +1,57 @@
 import streamlit as st
 import pandas as pd
 import requests
+from bs4 import BeautifulSoup
 from datetime import datetime
 import matplotlib.pyplot as plt
 
 # Title
 st.title("🏀 College Basketball Betting Dashboard")
 
-# Function to fetch NCAA game data from SportsData.io
-def get_sportsdata_ncaa_data():
-    API_KEY = "your_api_key_here"  # Replace with your actual SportsData.io API key
-    url = "https://api.sportsdata.io/v4/cbb/scores/json/GamesByDate/{today_date}"
-    today_date = datetime.today().strftime('%Y-%m-%d')
-    headers = {"Ocp-Apim-Subscription-Key": API_KEY}
+# Function to scrape ESPN NCAA data
+def get_espn_ncaa_data():
+    today_date = datetime.today().strftime('%Y%m%d')
+    url = f"https://www.espn.com/mens-college-basketball/scoreboard/_/date/{today_date}"
+    headers = {"User-Agent": "Mozilla/5.0"}
     
-    response = requests.get(url.format(today_date=today_date), headers=headers)
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, "html.parser")
     
-    if response.status_code != 200:
-        st.error("Error fetching data from SportsData.io")
-        return pd.DataFrame()
-    
-    data = response.json()
     games = []
-    for game in data:
-        team1 = game["HomeTeam"]
-        team2 = game["AwayTeam"]
-        score1 = game["HomeTeamScore"] if game["HomeTeamScore"] is not None else "N/A"
-        score2 = game["AwayTeamScore"] if game["AwayTeamScore"] is not None else "N/A"
+    for game in soup.find_all("article", class_="scoreboard" ):
+        teams = game.find_all("span", class_="sb-team-short")
+        scores = game.find_all("div", class_="score-container")
         
-        games.append({"Home Team": team1, "Away Team": team2, "Score": f"{score1} - {score2}"})
+        if len(teams) == 2 and len(scores) == 2:
+            team1 = teams[0].text.strip()
+            team2 = teams[1].text.strip()
+            score1 = scores[0].text.strip()
+            score2 = scores[1].text.strip()
+            
+            games.append({"Home Team": team1, "Away Team": team2, "Score": f"{score1} - {score2}"})
     
     return pd.DataFrame(games)
 
 # Function to get last 10 game scores for a team
 def get_last_10_games(team):
-    API_KEY = "your_api_key_here"  # Replace with your actual SportsData.io API key
-    url = f"https://api.sportsdata.io/v4/cbb/scores/json/TeamGameStatsBySeason/2024/{team}"
-    headers = {"Ocp-Apim-Subscription-Key": API_KEY}
+    url = f"https://www.espn.com/mens-college-basketball/team/schedule/_/id/{team}"
+    headers = {"User-Agent": "Mozilla/5.0"}
     response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, "html.parser")
     
-    if response.status_code != 200:
-        return pd.DataFrame()
-    
-    data = response.json()
     games = []
-    for game in data[:10]:  # Get last 10 games
-        date = game["Day"]
-        opponent = game["Opponent"]
-        result = "Win" if game["Wins"] > 0 else "Loss"
-        games.append({"Date": date, "Opponent": opponent, "Result": result})
+    for row in soup.find_all("tr", class_="Table__TR")[1:11]:  # Extract last 10 games
+        cols = row.find_all("td")
+        if len(cols) >= 3:
+            date = cols[0].text.strip()
+            opponent = cols[1].text.strip()
+            result = cols[2].text.strip()
+            games.append({"Date": date, "Opponent": opponent, "Result": result})
     
     return pd.DataFrame(games)
 
-# Fetch live NCAA data from SportsData.io
-ncaa_data = get_sportsdata_ncaa_data()
+# Fetch live NCAA data from ESPN
+ncaa_data = get_espn_ncaa_data()
 
 # Display all games
 st.write("### All Men's College Basketball Games Today")
@@ -69,12 +67,12 @@ if not ncaa_data.empty and "Home Team" in ncaa_data.columns:
         
         # Plot results
         fig, ax = plt.subplots()
-        results = team_data["Result"].apply(lambda x: 1 if "Win" in x else 0)  # Convert W/L to binary
+        results = team_data["Result"].apply(lambda x: 1 if "W" in x else 0)  # Convert W/L to binary
         ax.plot(results, marker='o', linestyle='-')
         ax.set_title(f"{team} Last 10 Games Results (1=Win, 0=Loss)")
         ax.set_ylim(-0.5, 1.5)
         st.pyplot(fig)
 else:
-    st.write("⚠ No game data available. Check SportsData.io API response.")
+    st.write("⚠ No game data available. Check ESPN scraping function.")
 
-st.write("🔹 This dashboard now pulls today's NCAA games and last 10 game results from SportsData.io!")
+st.write("🔹 This dashboard now pulls today's NCAA games and last 10 game results from ESPN!")
