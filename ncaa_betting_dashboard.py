@@ -10,22 +10,23 @@ st.title("🏀 College Basketball Betting Dashboard")
 # Function to scrape ESPN NCAA data for today's games
 def get_espn_ncaa_data():
     today = datetime.today().strftime('%Y%m%d')
-    url = f"https://www.espn.com/mens-college-basketball/scoreboard/_/seasontype/2/group/50"
+    url = f"https://www.espn.com/mens-college-basketball/scoreboard/_/date/{today}"
     headers = {"User-Agent": "Mozilla/5.0"}  # Mimic a real browser request
+    
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, "html.parser")
     
+    print(response.text)  # DEBUG: Print ESPN HTML response to check if data is retrieved
+    
     games = []
-    for game in soup.find_all("article", class_="scoreboard" ):
-        teams = game.find_all("span", class_="sb-team-short")
-        odds = game.find_all("div", class_="odds-details")
+    for game in soup.find_all("section", class_="Scoreboard__Item"):  # Updated structure
+        teams = game.find_all("div", class_="ScoreCell__TeamName")
+        odds = game.find("div", class_="Odds__Container")  # Updated structure
         
         if len(teams) == 2:
             team1 = teams[0].text.strip()
             team2 = teams[1].text.strip()
-            
-            # Extract odds if available
-            odds_text = odds[0].text.strip() if odds else "N/A"
+            odds_text = odds.text.strip() if odds else "N/A"
             
             games.append({"Home Team": team1, "Away Team": team2, "Odds": odds_text})
     
